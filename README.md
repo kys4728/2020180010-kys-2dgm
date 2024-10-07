@@ -18,6 +18,7 @@
 ![concept](https://github.com/user-attachments/assets/3648fbb0-e63b-46f5-8238-1480c6060aca)
 
 예상 게임 실행 흐름
+![gameprocess](https://github.com/user-attachments/assets/4b1af671-6272-4bab-ab86-8c2e033e1baa)
 
 게임 시작 시 시작화면 생성 -> 게임 시작 클릭 시 스테이지로 전환 되며 적들이 등장 -> 적 처치 후 업그레이드로 강화하며 게임 진행 -> 보스 등장 후 처치시 게임 종료-> 게임 종료 화면 생성
 간단히 스케치한 그림 사용
