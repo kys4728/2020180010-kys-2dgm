@@ -15,6 +15,7 @@
 체력 : 목숨은 3개 있으며 공격 피격시 플레이어 체력 감소, 0이 되면 목숨이 한 개 소진됨
 
 스크린샷 혹은 그림판으로 끄적인 이미지 포함
+![concept](https://github.com/user-attachments/assets/3648fbb0-e63b-46f5-8238-1480c6060aca)
 
 예상 게임 실행 흐름
 
