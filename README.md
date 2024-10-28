@@ -23,6 +23,7 @@
 ![image](https://github.com/user-attachments/assets/8899378e-c61d-42cb-800f-8c47deacc6fd)
 
 예상 게임 실행 흐름
+
 <img width="725" alt="image" src="https://github.com/user-attachments/assets/965b93bc-9d1a-49e9-a6a2-723a0dc00a3c">
 
 <img width="958" alt="image" src="https://github.com/user-attachments/assets/d81e4727-ed2e-422e-9f25-f27f292f92b3">
