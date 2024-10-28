@@ -1,6 +1,9 @@
 프로젝트 제목
+
  아머드 샷
+ 
 게임의 간단한 소개 (카피의 경우 원작에 대한 언급)
+
 ![image](https://github.com/user-attachments/assets/16c15421-9e85-498b-ad43-c30325fe29ad)
 
 게임 컨셉
@@ -20,6 +23,7 @@
 체력 : 목숨은 3개 있으며 공격 피격시 플레이어 체력 감소, 0이 되면 목숨이 한 개 소진됨
 
 스크린샷 혹은 그림판으로 끄적인 이미지 포함
+
 ![image](https://github.com/user-attachments/assets/8899378e-c61d-42cb-800f-8c47deacc6fd)
 
 예상 게임 실행 흐름
