@@ -21,10 +21,12 @@ class Fighter(gfw.Sprite):
 
     def __init__(self):
         super().__init__('res/fighter.png', get_canvas_width() // 2, 80)
+        self.layer_index = gfw.top().world.layer.fighter
         self.dx = 0
         self.dy = 0
         self.speed = 320  # 초당 320 픽셀
-        half_width = self.image.w // 2
+        self.width = 72
+        half_width = self.width // 2
         self.min_x = half_width
         self.max_x = get_canvas_width() - half_width
         half_height = self.image.h // 2
@@ -95,6 +97,9 @@ class Fighter(gfw.Sprite):
     def launch_missile(self):
         world = gfw.top().world
         world.append(Missile(self.x, self.y), world.layer.bullet)
+
+    def get_bb(self):
+        return self.x - 30, self.y - 32, self.x + 30, self.y + 28
 
 class Bullet(gfw.Sprite):
     def __init__(self, x, y):

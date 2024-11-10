@@ -54,7 +54,11 @@ class World:
     def count(self):
         return reduce(lambda sum, a: sum + len(a), self.objects, 0)
 
-def collides_box(a, b): # a or b is a Sprite
+def collides_box(a, b):
+    # a와 b 모두 투사체이면 충돌하지 않음
+    if getattr(a, 'is_projectile', False) and getattr(b, 'is_projectile', False):
+        return False
+
     la, ba, ra, ta = a.get_bb()
     lb, bb, rb, tb = b.get_bb()
 
