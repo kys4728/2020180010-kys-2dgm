@@ -16,8 +16,8 @@ class Fighter(gfw.Sprite):
     MISSILE_INTERVAL = 0.5
     SPARK_INTERVAL = 0.05
     SPARK_OFFSET = 28
-    MISSILE_MAX_SHOTS = 3  # 최대 미사일 발사 횟수
-    MISSILE_COOLDOWN = 3.0 # 쿨다운 시간
+    MISSILE_MAX_SHOTS = 3
+    MISSILE_COOLDOWN = 3.0
 
     def __init__(self):
         super().__init__('res/fighter.png', get_canvas_width() // 2, 80)
@@ -36,9 +36,16 @@ class Fighter(gfw.Sprite):
         self.missile_time = 0
         self.firing_laser = False
         self.firing_missile = False
-        self.spark_image = gfw.image.load('res/fire0.png')        
-        self.missile_count = Fighter.MISSILE_MAX_SHOTS  # 미사일 카운트 초기화
-        self.missile_cooldown_elapsed = 0  # 쿨다운 시간 경과 추적 변수
+        self.spark_image = gfw.image.load('res/fire0.png')
+        self.missile_count = Fighter.MISSILE_MAX_SHOTS
+        self.missile_cooldown_elapsed = 0
+        self.hp = 100
+        self.damage = 10  # 기본 데미지 설정
+
+    def increase_damage(self):
+        """전투기의 데미지를 증가시킵니다."""
+        self.damage += 5
+        print(f"Damage increased! Current damage: {self.damage}")
 
     def handle_event(self, e):
         pair = (e.type, e.key)
@@ -68,22 +75,19 @@ class Fighter(gfw.Sprite):
             self.fire()
             self.laser_time = 0
 
-        # 미사일 발사 관리
         self.missile_time += gfw.frame_time
         if self.firing_missile and self.missile_count > 0 and self.missile_time >= Fighter.MISSILE_INTERVAL:
             self.launch_missile()
             self.missile_time = 0
             self.missile_count -= 1
 
-            # 모든 미사일을 발사한 경우 쿨다운 초기화
             if self.missile_count == 0:
                 self.missile_cooldown_elapsed = 0
 
-        # 쿨다운 시간 경과 누적
         if self.missile_count == 0:
             self.missile_cooldown_elapsed += gfw.frame_time
             if self.missile_cooldown_elapsed >= Fighter.MISSILE_COOLDOWN:
-                self.missile_count = Fighter.MISSILE_MAX_SHOTS  # 미사일 카운트 초기화
+                self.missile_count = Fighter.MISSILE_MAX_SHOTS
 
     def draw(self):
         super().draw()
@@ -99,7 +103,7 @@ class Fighter(gfw.Sprite):
         world.append(Missile(self.x, self.y), world.layer.bullet)
 
     def get_bb(self):
-        return self.x - 30, self.y - 32, self.x + 30, self.y + 28
+        return self.x - 36, self.y - 36, self.x + 36, self.y + 36
 
 class Bullet(gfw.Sprite):
     def __init__(self, x, y):
@@ -112,7 +116,9 @@ class Bullet(gfw.Sprite):
         self.y += self.speed * gfw.frame_time
         if self.y > self.max_y:
             gfw.top().world.remove(self)
-
+    def get_bb(self):
+        r = 5  # 충돌 영역 반경
+        return self.x - r, self.y - r, self.x + r, self.y + r
 class Missile(gfw.Sprite):
     def __init__(self, x, y):
         super().__init__('res/missile.png', x, y)

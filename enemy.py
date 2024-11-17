@@ -1,5 +1,7 @@
 from pico2d import *
 import gfw
+import random
+from item import UpgradeItem 
 
 class Enemy(gfw.Sprite):
     WIDTH = 100
@@ -7,7 +9,7 @@ class Enemy(gfw.Sprite):
     MOVE_SPEED = 50  # 좌우 이동 속도
     SHOOT_INTERVAL = 1.5  # 총알 발사 간격
     MAX_BULLETS = 3
-
+    ITEM_DROP_CHANCE = 0.3  # 30% 확률로 아이템 드랍
 
     def __init__(self, index, target):
         x = self.WIDTH * index + self.WIDTH // 2
@@ -15,12 +17,10 @@ class Enemy(gfw.Sprite):
         super().__init__('res/enemy1.png', x, y)
         self.layer_index = gfw.top().world.layer.enemy
         self.speed = -100  # 아래로 내려가는 속도
-        self.layer_index = gfw.top().world.layer.enemy
         self.move_dir = 1  # 좌우 이동 방향 (1: 오른쪽, -1: 왼쪽)
         self.shoot_time = 0
-        self.target = target  # 플레이어의 위치를 목표로 설정
+        self.target = target  # 플레이어 객체
         self.bullet_count = 0
-
 
     def update(self):
         # 좌우 이동
@@ -42,40 +42,48 @@ class Enemy(gfw.Sprite):
                 gfw.top().world.append(bullet)
                 self.bullet_count += 1  # 발사된 총알 수 증가
 
+    def drop_item(self):
+        if random.random() < Enemy.ITEM_DROP_CHANCE:  # 30% 확률
+            effect_type = random.choice(['health', 'damage'])  # 아이템 효과 랜덤 선택
+            item = UpgradeItem(self.x, self.y, effect_type)  # 아이템 생성
+            gfw.top().world.append(item)
+
     def get_bb(self):
         r = 42
         return self.x - r, self.y - r, self.x + r, self.y + r
+    def remove(self):
+        self.drop_item()  # 적이 제거될 때 아이템 드랍 시도
+        gfw.top().world.remove(self)
 
 class EnemyGen:
-    GEN_INTERVAL = 2.0
+    GEN_INTERVAL = 5.0
+
     def __init__(self, target):
         self.time = 0
-        self.target = target  # 플레이어 객체 참조
+        self.target = target  # 플레이어 객체
 
-    def draw(self): 
+    def draw(self):
         pass
 
     def update(self):
         self.time += gfw.frame_time
         if self.time < self.GEN_INTERVAL:
             return
-        gfw.top().world.append(Enemy(0, self.target))
+        for i in range(3):  # 3개의 적을 생성
+            gfw.top().world.append(Enemy(i, self.target))
         self.time -= self.GEN_INTERVAL
 
+
 class Bullet(gfw.Sprite):
-    SPEED = 200  # 총알 속도
+    SPEED = 400  # 총알 속도
 
     def __init__(self, x, y, target_x, target_y):
         super().__init__('res/fire2.png', x, y)
         dx, dy = target_x - x, target_y - y
         distance = (dx**2 + dy**2) ** 0.5
         self.vx, self.vy = Bullet.SPEED * dx / distance, Bullet.SPEED * dy / distance
-
-        # enemy_bullet 레이어가 정의되어 있는지 확인
-        if hasattr(gfw.top().world.layer, 'enemy_bullet'):
-            self.layer_index = gfw.top().world.layer.enemy_bullet
-        else:
-            self.layer_index = gfw.top().world.layer.enemy  # 기본 enemy 레이어 사용
+        self.layer_index = gfw.top().world.layer.enemy_bullet
+        self.is_projectile = True  # 투사체로 식별
 
     def update(self):
         self.x += self.vx * gfw.frame_time
@@ -84,5 +92,5 @@ class Bullet(gfw.Sprite):
             gfw.top().world.remove(self)
 
     def get_bb(self):
-        r = 5  # 총알 크기에 맞게 설정
+        r = 5  # 총알 크기
         return self.x - r, self.y - r, self.x + r, self.y + r
