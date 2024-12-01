@@ -38,7 +38,7 @@ def update():
         return
     print(f'Loading {file=}')
     gfw.image.load(file)
-    time.sleep(0.2)
+    time.sleep(0.01)
     self.image_index += 1
 
 def draw():
@@ -59,6 +59,8 @@ def handle_event(e):
 IMAGE_FILES = [
     "res/background.png",
     "res/boss.png",
+    "res/bossfg.png",
+    "res/bossbg.png",
     "res/enemy.png",
     "res/enemy1.png",
     "res/enemys.png",
@@ -67,6 +69,7 @@ IMAGE_FILES = [
     "res/fire0.png",
     "res/fire1.png",
     "res/fire2.png",
+    "res/fire3.png",
     "res/healthbar.png",
     "res/item.png",
     "res/ldback.png",

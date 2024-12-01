@@ -40,12 +40,35 @@ class Fighter(gfw.Sprite):
         self.missile_count = Fighter.MISSILE_MAX_SHOTS
         self.missile_cooldown_elapsed = 0
         self.hp = 100
-        self.damage = 10  # 기본 데미지 설정
+        self.level = 1
+        self.item_count = 0  # 아이템 획득 카운트
+        self.damage = self.calculate_damage()
+        self.missile_max_shots = Fighter.MISSILE_MAX_SHOTS
 
-    def increase_damage(self):
-        """전투기의 데미지를 증가시킵니다."""
-        self.damage += 5
-        print(f"Damage increased! Current damage: {self.damage}")
+    def calculate_damage(self):
+        """현재 레벨에 따라 데미지를 계산합니다."""
+        self.missile_max_shots = Fighter.MISSILE_MAX_SHOTS + (self.level - 1)  # 레벨 2부터 미사일 추가
+        return 10 + (self.level - 1) * 5
+
+    def level_up(self):
+        """전투기의 레벨을 증가시킵니다. 최대 레벨은 3입니다."""
+        if self.level >= 3:
+            print("Max Level reached! No further leveling up.")
+            return
+        self.level += 1
+        self.damage = self.calculate_damage()
+        self.missile_count = self.missile_max_shots
+        print(f"Level Up! Current level: {self.level}, Damage: {self.damage}")
+
+    def collect_item(self):
+        """아이템을 수집했을 때 호출됩니다."""
+        self.item_count += 1
+        print(f"Item Collected! Current item count: {self.item_count}")
+        if self.item_count >= 5:  # 아이템 5개 단위로 레벨 업
+            self.item_count = 0  # 카운트 초기화
+            self.level_up()
+
+
 
     def handle_event(self, e):
         pair = (e.type, e.key)
@@ -87,7 +110,7 @@ class Fighter(gfw.Sprite):
         if self.missile_count == 0:
             self.missile_cooldown_elapsed += gfw.frame_time
             if self.missile_cooldown_elapsed >= Fighter.MISSILE_COOLDOWN:
-                self.missile_count = Fighter.MISSILE_MAX_SHOTS
+                self.missile_count = self.missile_max_shots 
 
     def draw(self):
         super().draw()
@@ -95,8 +118,19 @@ class Fighter(gfw.Sprite):
             self.spark_image.draw(self.x, self.y + Fighter.SPARK_OFFSET)
 
     def fire(self):
+        """플레이어가 발사하는 탄환을 생성"""
         world = gfw.top().world
+
+    # 기본 탄환 발사
         world.append(Bullet(self.x, self.y), world.layer.bullet)
+
+    # 레벨 2 이상이면 대각선 탄환 추가
+        if self.level >= 2:
+            world.append(DiagonalBullet(self.x - 10, self.y, dx=-100))  # 왼쪽 대각선
+            world.append(DiagonalBullet(self.x + 10, self.y, dx=100))   # 오른쪽 대각선
+
+        print(f"Fired bullets at level {self.level}")
+
 
     def launch_missile(self):
         world = gfw.top().world
@@ -119,6 +153,26 @@ class Bullet(gfw.Sprite):
     def get_bb(self):
         r = 5  # 충돌 영역 반경
         return self.x - r, self.y - r, self.x + r, self.y + r
+
+class DiagonalBullet(gfw.Sprite):
+    def __init__(self, x, y, dx):
+        super().__init__('res/fire2.png', x, y)
+        self.dx = dx  # 탄환의 x축 이동 속도
+        self.speed = 400  # y축 이동 속도
+        self.max_y = get_canvas_height() + self.image.h
+        self.layer_index = gfw.top().world.layer.bullet
+
+    def update(self):
+        self.x += self.dx * gfw.frame_time
+        self.y += self.speed * gfw.frame_time
+        if self.y > self.max_y or self.x < 0 or self.x > get_canvas_width():
+            gfw.top().world.remove(self)
+
+    def get_bb(self):
+        r = 5
+        return self.x - r, self.y - r, self.x + r, self.y + r
+
+
 class Missile(gfw.Sprite):
     def __init__(self, x, y):
         super().__init__('res/missile.png', x, y)
