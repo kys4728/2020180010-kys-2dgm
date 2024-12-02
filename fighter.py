@@ -14,6 +14,7 @@ class Fighter(gfw.Sprite):
     }
     LASER_INTERVAL = 0.25
     MISSILE_INTERVAL = 0.5
+    SPECIAL_LASER_INTERVAL = 0.5
     SPARK_INTERVAL = 0.05
     SPARK_OFFSET = 28
     MISSILE_MAX_SHOTS = 3
@@ -34,6 +35,7 @@ class Fighter(gfw.Sprite):
         self.max_y = get_canvas_height() - half_height
         self.laser_time = 0
         self.missile_time = 0
+        self.special_laser_time = 0
         self.firing_laser = False
         self.firing_missile = False
         self.spark_image = gfw.image.load('res/fire0.png')
@@ -42,6 +44,8 @@ class Fighter(gfw.Sprite):
         self.hp = 100
         self.level = 1
         self.item_count = 0  # 아이템 획득 카운트
+        self.bullet_power = 10  # 기본 탄환 공격력
+        self.missile_power = 100 
         self.damage = self.calculate_damage()
         self.missile_max_shots = Fighter.MISSILE_MAX_SHOTS
 
@@ -57,6 +61,8 @@ class Fighter(gfw.Sprite):
             return
         self.level += 1
         self.damage = self.calculate_damage()
+        self.bullet_power += 5  # 탄환 공격력 증가
+        self.missile_power += 50  # 미사일 공격력 증가
         self.missile_count = self.missile_max_shots
         print(f"Level Up! Current level: {self.level}, Damage: {self.damage}")
 
@@ -94,6 +100,7 @@ class Fighter(gfw.Sprite):
         self.y = clamp(self.min_y, self.y, self.max_y)
 
         self.laser_time += gfw.frame_time
+        self.special_laser_time += gfw.frame_time
         if self.firing_laser and self.laser_time >= Fighter.LASER_INTERVAL:
             self.fire()
             self.laser_time = 0
@@ -122,28 +129,45 @@ class Fighter(gfw.Sprite):
         world = gfw.top().world
 
     # 기본 탄환 발사
-        world.append(Bullet(self.x, self.y), world.layer.bullet)
+        world.append(Bullet(self.x, self.y, self.bullet_power), world.layer.bullet)
 
     # 레벨 2 이상이면 대각선 탄환 추가
         if self.level >= 2:
-            world.append(DiagonalBullet(self.x - 10, self.y, dx=-100))  # 왼쪽 대각선
-            world.append(DiagonalBullet(self.x + 10, self.y, dx=100))   # 오른쪽 대각선
+            diagonal_power = self.bullet_power // 2
+            world.append(DiagonalBullet(self.x - 10, self.y, dx=-100, attack_power=self.bullet_power))  # 왼쪽 대각선
+            world.append(DiagonalBullet(self.x + 10, self.y, dx=100, attack_power=self.bullet_power))   # 오른쪽 대각선
 
-        print(f"Fired bullets at level {self.level}")
+        if self.level == 3:
+            if self.special_laser_time >= Fighter.SPECIAL_LASER_INTERVAL:
+                special_bullet_power = int(self.bullet_power * 1.5)  # 특수 탄환 공격력
+                world.append(SpecialBullet(self.x, self.y, special_bullet_power), world.layer.bullet)
+                self.special_laser_time = 0  # 특수 탄 발사 시간 초기화
+        # 레벨 3에서는 정면 탄환에 새로운 이미지 사용
+        else:
+        # 정면 탄환 (레벨 1 및 2)
+            world.append(Bullet(self.x, self.y, self.bullet_power), world.layer.bullet)
 
+
+            print(f"Fired bullets at level {self.level}")
+        if self.level >= 3:
+            print(f"Special bullets with attack power: {self.bullet_power}")
+        elif self.level >= 2:
+            print(f"Diagonal bullets with attack power: {diagonal_power}")
 
     def launch_missile(self):
         world = gfw.top().world
-        world.append(Missile(self.x, self.y), world.layer.bullet)
-
+        world.append(Missile(self.x, self.y, self.missile_power), world.layer.bullet)
+        print(f"Missile launched with attack power: {self.missile_power}")
     def get_bb(self):
-        return self.x - 36, self.y - 36, self.x + 36, self.y + 36
+        r = 10  # 커다란 투사체 충돌 영역 반경
+        return self.x - r, self.y - r, self.x + r, self.y + r
 
 class Bullet(gfw.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, attack_power):
         super().__init__('res/fire1.png', x, y)
         self.speed = 400  # 초당 400 픽셀
         self.max_y = get_canvas_height() + self.image.h
+        self.attack_power = attack_power
         self.layer_index = gfw.top().world.layer.bullet
 
     def update(self):
@@ -155,11 +179,12 @@ class Bullet(gfw.Sprite):
         return self.x - r, self.y - r, self.x + r, self.y + r
 
 class DiagonalBullet(gfw.Sprite):
-    def __init__(self, x, y, dx):
+    def __init__(self, x, y, dx, attack_power):
         super().__init__('res/fire2.png', x, y)
         self.dx = dx  # 탄환의 x축 이동 속도
         self.speed = 400  # y축 이동 속도
         self.max_y = get_canvas_height() + self.image.h
+        self.attack_power = attack_power
         self.layer_index = gfw.top().world.layer.bullet
 
     def update(self):
@@ -171,12 +196,29 @@ class DiagonalBullet(gfw.Sprite):
     def get_bb(self):
         r = 5
         return self.x - r, self.y - r, self.x + r, self.y + r
+class SpecialBullet(gfw.Sprite):
+    def __init__(self, x, y, attack_power):
+        super().__init__('res/fire3.png', x, y)  # 레벨 3에서 사용할 새로운 이미지
+        self.speed = 500  # 레벨 3 탄환은 더 빠르게
+        self.attack_power = attack_power
+        self.max_y = get_canvas_height() + self.image.h
+        self.layer_index = gfw.top().world.layer.bullet
+
+    def update(self):
+        self.y += self.speed * gfw.frame_time
+        if self.y > self.max_y:
+            gfw.top().world.remove(self)
+
+    def get_bb(self):
+        r = 7  # 충돌 영역 크기
+        return self.x - r, self.y - r, self.x + r, self.y + r
 
 
 class Missile(gfw.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, attack_power):
         super().__init__('res/missile.png', x, y)
         self.speed = 600  # 초당 600 픽셀
+        self.attack_power = attack_power
         self.max_y = get_canvas_height() + self.image.h
         self.layer_index = gfw.top().world.layer.bullet
 

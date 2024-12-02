@@ -10,7 +10,7 @@ class Enemy(gfw.Sprite):
     MIN_SHOOT_INTERVAL = 0.5  # 최소 총알 발사 간격
     MAX_BULLETS = 3
     ITEM_DROP_CHANCE = 0.3  # 30% 확률로 아이템 드랍
-    HEALTH = 30  # 적 체력
+    HP = 30  # 적 체력
     SCALE = 0.75
     gauge = None
     IMAGE_RECTS = [
@@ -35,7 +35,7 @@ class Enemy(gfw.Sprite):
         self.bullet_count = 0
         self.frame_index = 0  # 현재 프레임 인덱스
         self.frame_time = 0  # 프레임 변경 시간 관리
-        self.health = Enemy.HEALTH
+        self.hp = Enemy.HP
         self.shoot_interval = Enemy.SHOOT_INTERVAL
 
         def apply_damage(self, damage):
@@ -89,8 +89,9 @@ class Enemy(gfw.Sprite):
         )
     def take_damage(self, damage):
         """적에게 데미지를 입히는 함수"""
-        self.health -= damage
-        if self.health <= 0:
+        self.hp -= damage
+        print(f"Enemy hit! Remaining HP: {self.hp}")
+        if self.hp <= 0:
             self.remove()
           
     def drop_item(self):
