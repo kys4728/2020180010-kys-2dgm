@@ -186,7 +186,11 @@ UI 및 사운드 추가
    
 <img width="749" alt="image" src="https://github.com/user-attachments/assets/6355585a-b144-456f-b995-512fb3766581">
 
-6. 주차 별 구현 내용
+5. 주차 별 구현 내용
 
 <img width="938" alt="image" src="https://github.com/user-attachments/assets/b6b820c5-04c9-4f1a-a808-6864b7f25c27">
 
+ - **5주차**
+1. 보스 객체를 추가하였습니다. 보스는 일반 적보다 강한 공격과 패턴을 가진 공격을 가하며 별도의 체력바를 가집니다.
+2. 플레이어 업그레이드 상태에 따른 투사체가 추가되었습니다.
+3. 일반 적이 랜덤한 패턴을 가지며 공격합니다.
