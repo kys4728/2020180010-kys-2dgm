@@ -9,7 +9,7 @@ class Boss(gfw.Sprite):
     MOVE_SPEED = 100  # 좌우 이동 속도
     
     MAX_BULLETS = 10
-    HP = 500  # 보스 체력
+    HP = 1000  # 보스 체력
     SCALE = 1.75  # 보스 크기 확대 배율
     gauge = None
     BASE_BIG_BULLET_INTERVAL = 2.0  # 기본 커다란 투사체 발사 간격
@@ -132,7 +132,7 @@ class Boss(gfw.Sprite):
             print("Boss Defeated!")
             self.remove()
     def get_bb(self):
-        r = int(Boss.WIDTH // 2 * Boss.SCALE)
+        r = int(Boss.WIDTH // 4 * Boss.SCALE)
         return self.x - r, self.y - r, self.x + r, self.y + r
 
     def take_damage(self, damage):
@@ -168,7 +168,6 @@ class BossBullet(gfw.Sprite):
 
 class BigBossBullet(gfw.Sprite):
     SPEED = 300  # 커다란 투사체 속도
-    DAMAGE = 20  # 커다란 투사체 데미지
     ROTATE_SPEED = 180
 
     def __init__(self, x, y, target_x, target_y):
@@ -178,7 +177,7 @@ class BigBossBullet(gfw.Sprite):
         distance = (dx**2 + dy**2)**0.5
         self.vx, self.vy = BigBossBullet.SPEED * dx / distance, BigBossBullet.SPEED * dy / distance
         self.angle = 0  # 초기 각도
-        self.layer_index = gfw.top().world.layer.enemy_bullet
+        self.layer_index = gfw.top().world.layer.boss_bullet
         self.is_boss_bullet = True
 
     def update(self):

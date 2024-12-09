@@ -8,14 +8,14 @@ _stack = []
 def start(scene):
     import gfw
 
-    w, h = 800, 600
+    w, h = 625, 1100
     if hasattr(scene, 'canvas_width'): w = scene.canvas_width
     if hasattr(scene, 'canvas_height'): h = scene.canvas_height
 
-    open_canvas(w=w, h=h, sync=True) # canvas 를 열어서 화면을 준비한다
+    open_canvas(w=w, h=h, sync=True)
 
-    gfw.shows_bounding_box = scene.shows_bounding_box if hasattr(scene, 'shows_bounding_box') else False
-    gfw.shows_object_count = scene.shows_object_count if hasattr(scene, 'shows_object_count') else False
+    gfw.shows_bounding_box = getattr(scene, 'shows_bounding_box', False)
+    gfw.shows_object_count = getattr(scene, 'shows_object_count', False)
     if gfw.shows_object_count: 
         _load_system_font()
 
@@ -24,36 +24,36 @@ def start(scene):
     global frame_time
     last_time = time.time()
 
-    while _running: # 무한루프를 돈다
-
-        # inter-frame (delta) time
+    while _running:
         now = time.time()
         gfw.frame_time = now - last_time
         last_time = now
 
-        # update() 를 수행한다 (Game Logic)
-        _stack[-1].world.update()
+        # update() 수행
+        if hasattr(_stack[-1], 'world') and _stack[-1].world is not None:
+            _stack[-1].world.update()
 
-        # draw() 를 수행한다 (Rendering)
+        # draw() 수행
         clear_canvas()
-        _stack[-1].world.draw()
+        if hasattr(_stack[-1], 'world') and _stack[-1].world is not None:
+            _stack[-1].world.draw()
+        else:
+            _stack[-1].draw()  # world 없는 경우 개별 draw 호출
         update_canvas()
 
-        # event 를 처리한다
+        # event 처리
         for e in get_events():
             handled = _stack[-1].handle_event(e)
             if not handled:
                 if e.type == SDL_QUIT:
                     quit()
-                elif e.type == SDL_KEYDOWN:
-                    if e.key == SDLK_ESCAPE:
-                        pop()
+                elif e.type == SDL_KEYDOWN and e.key == SDLK_ESCAPE:
+                    pop()
 
     while _stack:
         _stack.pop().exit()
-        # scene 종료 전에 할 일이 있으면 할 수 있는 기회를 준다
 
-    close_canvas() # Game Loop 를 빠져 나왔으므로 화면을 닫는다
+    close_canvas()
 
 def start_main_module():
     import sys
@@ -98,7 +98,7 @@ def top():
 def _load_system_font():
     import gfw
     gfw._system_font = None
-    paths = [ 'lucon.ttf', 'res/lucon.ttf', 'C:/Windows/Fonts/lucon.ttf' ]
+    paths = [ 'artie-sans.ttf', 'res/artie-sans.ttf', 'C:/Users/ktx39/OneDrive/사진/바탕 화면/2dprogramming/resartie-sans.ttf' ]
     for path in paths:
         try:
             font = load_font(path, 20)

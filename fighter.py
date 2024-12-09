@@ -1,5 +1,7 @@
 from pico2d import *
 import gfw
+import random
+
 
 class Fighter(gfw.Sprite):
     KEY_MAP = {
@@ -19,9 +21,9 @@ class Fighter(gfw.Sprite):
     SPARK_OFFSET = 28
     MISSILE_MAX_SHOTS = 3
     MISSILE_COOLDOWN = 3.0
-
+    
     def __init__(self):
-        super().__init__('res/fighter.png', get_canvas_width() // 2, 80)
+        super().__init__('res/fighter.png', get_canvas_width() // 2, 200)
         self.layer_index = gfw.top().world.layer.fighter
         self.dx = 0
         self.dy = 0
@@ -31,24 +33,32 @@ class Fighter(gfw.Sprite):
         self.min_x = half_width
         self.max_x = get_canvas_width() - half_width
         half_height = self.image.h // 2
-        self.min_y = half_height
+        self.min_y = 100 + half_height
         self.max_y = get_canvas_height() - half_height
+        self.start_x = get_canvas_width() // 2  # 초기 위치 X
+        self.start_y = 200  # 초기 위치 Y
+        self.reset_position()
         self.laser_time = 0
-        self.missile_time = 0
         self.special_laser_time = 0
         self.firing_laser = False
         self.firing_missile = False
         self.spark_image = gfw.image.load('res/fire0.png')
+        self.missile_time = 0
         self.missile_count = Fighter.MISSILE_MAX_SHOTS
         self.missile_cooldown_elapsed = 0
+        self.missile_max_shots = Fighter.MISSILE_MAX_SHOTS
+        self.missile_recharge_delay = 1.0
+        self.missile_power = 100 
         self.hp = 100
+        self.max_hp = 100
+        self.lives = 3  # 초기 목숨
+        if not hasattr(Fighter, 'gauge'):
+            Fighter.gauge = gfw.Gauge('res/playerfg2.png', 'res/bossbg2.png')
         self.level = 1
         self.item_count = 0  # 아이템 획득 카운트
         self.bullet_power = 10  # 기본 탄환 공격력
-        self.missile_power = 100 
-        self.damage = self.calculate_damage()
-        self.missile_max_shots = Fighter.MISSILE_MAX_SHOTS
-
+        self.damage = self.calculate_damage()   
+ 
     def calculate_damage(self):
         """현재 레벨에 따라 데미지를 계산합니다."""
         self.missile_max_shots = Fighter.MISSILE_MAX_SHOTS + (self.level - 1)  # 레벨 2부터 미사일 추가
@@ -57,14 +67,13 @@ class Fighter(gfw.Sprite):
     def level_up(self):
         """전투기의 레벨을 증가시킵니다. 최대 레벨은 3입니다."""
         if self.level >= 3:
-            print("Max Level reached! No further leveling up.")
             return
         self.level += 1
         self.damage = self.calculate_damage()
         self.bullet_power += 5  # 탄환 공격력 증가
         self.missile_power += 50  # 미사일 공격력 증가
+        self.missile_max_shots = Fighter.MISSILE_MAX_SHOTS + (self.level - 1)
         self.missile_count = self.missile_max_shots
-        print(f"Level Up! Current level: {self.level}, Damage: {self.damage}")
 
     def collect_item(self):
         """아이템을 수집했을 때 호출됩니다."""
@@ -74,7 +83,32 @@ class Fighter(gfw.Sprite):
             self.item_count = 0  # 카운트 초기화
             self.level_up()
 
+    def take_damage(self, damage):
+        """플레이어가 피해를 받을 때 호출됩니다."""
+        self.hp -= damage
+        print(f"Fighter HP: {self.hp}")
+        if self.hp <= 0:
+            self.lives -= 1
+            print(f"Fighter lost a life! Remaining lives: {self.lives}")
+            if self.lives > 0:
+                self.reset_position()  # 초기 위치로 복귀
+                self.drop_items()  # 아이템 5개 뿌리기
+                self.hp = self.max_hp  # 체력 복구
+            else:
+                self.game_over()       
 
+    def reset_position(self):
+        """플레이어를 초기 위치로 이동"""
+        self.x = self.start_x
+        self.y = self.start_y
+
+    def drop_items(self):
+        """플레이어가 아이템 5개를 뿌림"""
+        for _ in range(5):
+            x = random.randint(50, get_canvas_width() - 50)  # 화면 내 랜덤 위치
+            y = random.randint(200, get_canvas_height() - 200)  # 화면 내 랜덤 위치
+            item = UpgradeItem(x, y)  # 아이템 생성
+            gfw.top().world.append(item, gfw.top().world.layer.item)
 
     def handle_event(self, e):
         pair = (e.type, e.key)
@@ -109,15 +143,12 @@ class Fighter(gfw.Sprite):
         if self.firing_missile and self.missile_count > 0 and self.missile_time >= Fighter.MISSILE_INTERVAL:
             self.launch_missile()
             self.missile_time = 0
-            self.missile_count -= 1
 
-            if self.missile_count == 0:
-                self.missile_cooldown_elapsed = 0
-
-        if self.missile_count == 0:
+        if self.missile_count < self.missile_max_shots:  # `self.missile_max_shots` 기준
             self.missile_cooldown_elapsed += gfw.frame_time
-            if self.missile_cooldown_elapsed >= Fighter.MISSILE_COOLDOWN:
-                self.missile_count = self.missile_max_shots 
+            if self.missile_cooldown_elapsed >= self.missile_recharge_delay:
+                self.missile_count += 1
+                self.missile_cooldown_elapsed = 0
 
     def draw(self):
         super().draw()
@@ -134,13 +165,13 @@ class Fighter(gfw.Sprite):
     # 레벨 2 이상이면 대각선 탄환 추가
         if self.level >= 2:
             diagonal_power = self.bullet_power // 2
-            world.append(DiagonalBullet(self.x - 10, self.y, dx=-100, attack_power=self.bullet_power))  # 왼쪽 대각선
-            world.append(DiagonalBullet(self.x + 10, self.y, dx=100, attack_power=self.bullet_power))   # 오른쪽 대각선
+            world.append(SecondBullet(self.x - 10, self.y, dx=-100, attack_power=self.bullet_power))  # 왼쪽 대각선
+            world.append(SecondBullet(self.x + 10, self.y, dx=100, attack_power=self.bullet_power))   # 오른쪽 대각선
 
         if self.level == 3:
             if self.special_laser_time >= Fighter.SPECIAL_LASER_INTERVAL:
                 special_bullet_power = int(self.bullet_power * 1.5)  # 특수 탄환 공격력
-                world.append(SpecialBullet(self.x, self.y, special_bullet_power), world.layer.bullet)
+                world.append(ThirdBullet(self.x, self.y, special_bullet_power), world.layer.bullet)
                 self.special_laser_time = 0  # 특수 탄 발사 시간 초기화
         # 레벨 3에서는 정면 탄환에 새로운 이미지 사용
         else:
@@ -150,14 +181,18 @@ class Fighter(gfw.Sprite):
 
             print(f"Fired bullets at level {self.level}")
         if self.level >= 3:
-            print(f"Special bullets with attack power: {self.bullet_power}")
+            print(f"ThirdBullet with attack power: {self.bullet_power}")
         elif self.level >= 2:
-            print(f"Diagonal bullets with attack power: {diagonal_power}")
+            print(f"SecondBullet with attack power: {diagonal_power}")
 
     def launch_missile(self):
-        world = gfw.top().world
-        world.append(Missile(self.x, self.y, self.missile_power), world.layer.bullet)
+        if self.missile_count > 0:  # 미사일이 남아 있을 때만 발사
+            world = gfw.top().world
+            world.append(Missile(self.x, self.y, self.missile_power), world.layer.bullet)
+            self.missile_count -= 1
+            self.missile_cooldown_elapsed = 0
         print(f"Missile launched with attack power: {self.missile_power}")
+    
     def get_bb(self):
         r = 10  # 커다란 투사체 충돌 영역 반경
         return self.x - r, self.y - r, self.x + r, self.y + r
@@ -178,7 +213,7 @@ class Bullet(gfw.Sprite):
         r = 5  # 충돌 영역 반경
         return self.x - r, self.y - r, self.x + r, self.y + r
 
-class DiagonalBullet(gfw.Sprite):
+class SecondBullet(gfw.Sprite):
     def __init__(self, x, y, dx, attack_power):
         super().__init__('res/fire2.png', x, y)
         self.dx = dx  # 탄환의 x축 이동 속도
@@ -196,7 +231,7 @@ class DiagonalBullet(gfw.Sprite):
     def get_bb(self):
         r = 5
         return self.x - r, self.y - r, self.x + r, self.y + r
-class SpecialBullet(gfw.Sprite):
+class ThirdBullet(gfw.Sprite):
     def __init__(self, x, y, attack_power):
         super().__init__('res/fire3.png', x, y)  # 레벨 3에서 사용할 새로운 이미지
         self.speed = 500  # 레벨 3 탄환은 더 빠르게

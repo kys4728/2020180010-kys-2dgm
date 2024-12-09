@@ -3,6 +3,7 @@ from item import UpgradeItem  # 아이템 클래스 가져오기
 from boss import *
 from enemy import *
 from fighter import *
+import game_over
 
 class CollisionChecker:
     def __init__(self, fighter):
@@ -17,6 +18,7 @@ class CollisionChecker:
         self.enemies = gfw.top().world.objects_at(gfw.top().world.layer.enemy)
         self.bullets = gfw.top().world.objects_at(gfw.top().world.layer.bullet)
         self.enemy_bullets = gfw.top().world.objects_at(gfw.top().world.layer.enemy_bullet)
+        self.boss_bullets = gfw.top().world.objects_at(gfw.top().world.layer.boss_bullet)
         self.bosses = gfw.top().world.objects_at(gfw.top().world.layer.boss)
         self.items = gfw.top().world.objects_at(gfw.top().world.layer.item)
         # 충돌 체크 로직
@@ -34,11 +36,12 @@ class CollisionChecker:
                     continue
                 if self.is_colliding(enemy1, enemy2):
                     overlap = (enemy1.get_bb()[2] - enemy2.get_bb()[0]) / 2
+                    dx = overlap * 0.5  # 반발 효과
                     enemy1.x -= overlap
                     enemy2.x += overlap
                     enemy1.move_dir *= -1  # 충돌한 적의 X 방향 반전
                     enemy2.move_dir *= -1
-
+        return
     def handle_projectile_collision(self, projectile, target):
         if gfw.collides_box(projectile, target):
             target.take_damage(projectile.attack_power)
@@ -51,9 +54,29 @@ class CollisionChecker:
                 elif isinstance(target, Boss):
                     print("Boss defeated!")
                     gfw.top().world.remove(target)
+                    self.game_over()
             return True
         return False    
 
+    def handle_fighter_death(self):
+        """플레이어 목숨 감소 처리"""
+        self.fighter.lives -= 1
+        print(f"Fighter lost a life! Remaining lives: {self.fighter.lives}")
+        if self.fighter.lives > 0:
+            self.fighter.hp = self.fighter.max_hp  # 체력을 복구
+            self.fighter.reset_position()  # 초기 위치 복귀
+            self.drop_items(5)  # 아이템 5개 뿌리기
+        else:
+            self.game_over()  # 게임 오버 상태로 전환
+
+    def drop_items(self, count):
+        """아이템을 화면에 뿌리기"""
+        for _ in range(count):
+            x = random.randint(50, get_canvas_width() - 50)
+            y = random.randint(200, get_canvas_height() - 200)
+            item = UpgradeItem(x, y, 'damage')  # 고정 효과 아이템 생성
+            gfw.top().world.append(item, gfw.top().world.layer.item)
+            
     def check_enemy_collision(self):
         for e in self.enemies:
             for b in self.bullets:
@@ -62,21 +85,23 @@ class CollisionChecker:
 
             if gfw.collides_box(self.fighter, e):
                 gfw.top().world.remove(e)
+                self.kill_count += 1
+                self.check_boss_spawn()
                 self.fighter.hp -= 10
                 print(f"Fighter HP: {self.fighter.hp}")
                 if self.fighter.hp <= 0:
-                    self.game_over()
+                   self.handle_fighter_death()
                 break
 
     def check_enemy_bullet_collision(self):
         for b in self.enemy_bullets:
-            if not isinstance(b, BossBullet) and gfw.collides_box(b, self.fighter):
+            if not isinstance(b, Bullet) and gfw.collides_box(b, self.fighter):
                 print("Fighter hit by Enemy Bullet!")
                 gfw.top().world.remove(b)
-                self.fighter.hp -= 1  # 일반 적 투사체에 맞으면 체력 1 감소
+                self.fighter.hp -= 2  # 일반 적 투사체에 맞으면 체력 1 감소
                 print(f"Fighter HP: {self.fighter.hp}")
             if self.fighter.hp <= 0:
-                self.game_over()
+                self.handle_fighter_death()
                 break
 
 
@@ -84,17 +109,17 @@ class CollisionChecker:
         for boss in self.bosses:
             for b in self.bullets:
                 if self.handle_projectile_collision(b, boss):
-                    break  # 보스가 제거되었으므로 다음 보스로 이동
+                    break
 
             if gfw.collides_box(self.fighter, boss):
                 self.fighter.hp -= 20
                 print(f"Fighter HP: {self.fighter.hp}")
                 if self.fighter.hp <= 0:
-                    self.game_over()
+                   self.handle_fighter_death()
                 break
 
     def check_boss_bullet_collision(self):
-        for b in self.enemy_bullets:
+        for b in self.boss_bullets:
             if isinstance(b, BossBullet) and gfw.collides_box(b, self.fighter):
                 print("Fighter hit by Boss Bullet!")
                 gfw.top().world.remove(b)
@@ -105,7 +130,7 @@ class CollisionChecker:
                 self.fighter.hp -= 20    
                 print(f"Fighter HP: {self.fighter.hp}")
             if self.fighter.hp <= 0:
-                self.game_over()
+                self.handle_fighter_death()
                 break
 
 
@@ -138,9 +163,9 @@ class CollisionChecker:
 
             self.kill_count = 0
 
+
     def game_over(self):
-        print("Game Over!")
-        gfw.quit()
+        gfw.change(game_over)
 
     def is_colliding(self, obj1, obj2):
         """두 객체 간 충돌 감지 (박스 기반)"""

@@ -27,13 +27,14 @@ class Button(Sprite):
         # 버튼 배경 그리기
         self.bg.draw(self.x, self.y, self.width, self.height)
         # 버튼 텍스트 그리기
-        text_x = self.x - (self.width // 6)  # 대략적인 중앙 위치
+        text_x = self.x - (self.width // 5.7)  # 대략적인 중앙 위치
         text_y = self.y - 5
         self.font.draw(text_x, text_y, self.title, (255, 255, 255))
 
     def handle_event(self, e):
         if e.type == SDL_MOUSEBUTTONDOWN and e.button == SDL_BUTTON_LEFT:
-            if self.is_inside(e.x, e.y):
+            mouse_x, mouse_y = e.x, canvas_height - e.y
+            if self.is_inside(mouse_x, mouse_y):
                 if self.on_click:
                     self.on_click()
                 return True
@@ -63,13 +64,13 @@ def enter():
 
     # 시작 버튼 추가
     start_button = Button(
-        button_bg, "Start", center_x, center_y + button_gap, 400, 80, quit_game
+        button_bg, "Start", center_x, center_y + button_gap, 400, 80, start_game
     )
     world.append(start_button, 1)
 
     # 종료 버튼 추가
     quit_button = Button(
-        button_bg, " Quit", center_x, center_y - button_gap, 400, 80, start_game
+        button_bg, " Quit", center_x, center_y - button_gap, 400, 80, quit_game
     )
     world.append(quit_button, 1)
 
