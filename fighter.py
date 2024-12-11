@@ -2,7 +2,7 @@ from pico2d import *
 import gfw
 import random
 import game_over
-
+import c_check
 class Fighter(gfw.Sprite):
     KEY_MAP = {
         (SDL_KEYDOWN, SDLK_LEFT):  (-1, 0),
@@ -75,7 +75,7 @@ class Fighter(gfw.Sprite):
         return 10 + (self.level - 1) * 5
 
     def level_up(self):
-        """전투기의 레벨을 증가시킵니다. 최대 레벨은 3입니다."""
+        """전투기의 레벨을 증가시킵니다. 최대 레벨은 4입니다."""
         if self.level >= 4:
             return
         self.level += 1

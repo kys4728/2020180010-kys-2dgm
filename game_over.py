@@ -3,7 +3,6 @@ import gfw
 import title_scene
 import main_scene
 import boss
-import c_check
 def enter():
     global game_over_image, font, font_large
     

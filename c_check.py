@@ -3,7 +3,7 @@ from item import UpgradeItem  # 아이템 클래스 가져오기
 from boss import *
 from enemy import *
 from fighter import *
-import game_over
+from game_over import *
 
 class CollisionChecker:
     def __init__(self, fighter):
@@ -109,7 +109,7 @@ class CollisionChecker:
 
     def check_enemy_bullet_collision(self):
         for b in self.enemy_bullets:
-            if not isinstance(b, Bullet) and gfw.collides_box(b, self.fighter):
+            if isinstance(b, Bullet) and gfw.collides_box(b, self.fighter):
                 print("Fighter hit by Enemy Bullet!")
                 gfw.top().world.remove(b)
                 self.fighter.hp -= 10  
@@ -141,6 +141,8 @@ class CollisionChecker:
             if isinstance(b, BossBullet) and gfw.collides_box(b, self.fighter):
                 print("Fighter hit by Boss Bullet!")
                 gfw.top().world.remove(b)
+                if self.fdamage:  # 체력 감소 사운드 재생
+                    self.fdamage.play()
                 self.fighter.hp -= 15  # 보스 투사체에 맞으면 더 큰 데미지
             if isinstance(b, BigBossBullet) and gfw.collides_box(b, self.fighter):
                 print("Fighter hit by Big Boss Bullet!")
@@ -167,7 +169,7 @@ class CollisionChecker:
         gfw.top().world.append(UpgradeItem(x, y, effect_type), gfw.top().world.layer.item)
 
     def check_boss_spawn(self):
-        if self.kill_count >= 15:
+        if self.kill_count >= 1:
             existing_bosses = gfw.top().world.objects_at(gfw.top().world.layer.boss)
             if existing_bosses:
                 return  

@@ -93,10 +93,7 @@ class Enemy(gfw.Sprite):
             self.remove()
           
     def drop_item(self):
-        chance = random.random()
-    
-        if chance < Enemy.ITEM_DROP_CHANCE:
-            print("Item dropped!")
+        if random.random() < Enemy.ITEM_DROP_CHANCE:  # 30% 확률
             item = UpgradeItem(self.x, self.y)  # 아이템 생성
             gfw.top().world.append(item)
 
@@ -187,3 +184,4 @@ class Bullet(gfw.Sprite):
     def get_bb(self):
         r = 5  # 총알 크기
         return self.x - r, self.y - r, self.x + r, self.y + r
+        

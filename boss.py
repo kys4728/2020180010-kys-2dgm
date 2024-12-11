@@ -2,7 +2,7 @@ from pico2d import *
 import gfw
 import random
 from item import UpgradeItem
-import game_over
+from game_over import *
 
 class Boss(gfw.Sprite):
     WIDTH = 113
@@ -10,7 +10,7 @@ class Boss(gfw.Sprite):
     MOVE_SPEED = 100  # 좌우 이동 속도
     
     MAX_BULLETS = 10
-    HP = 5000  # 보스 체력
+    HP = 1000  # 보스 체력
     SCALE = 1.75  # 보스 크기 확대 배율
     gauge = None
     BASE_BIG_BULLET_INTERVAL = 2.0  # 기본 커다란 투사체 발사 간격
@@ -51,12 +51,10 @@ class Boss(gfw.Sprite):
         self.shoot_interval = Boss.BASE_SHOOT_INTERVAL
         if Boss.boss_sound is None:
             Boss.boss_sound = load_wav('res/boss.wav')
-            Boss.boss_sound.set_volume(50)
+            Boss.boss_sound.set_volume(100)
         Boss.boss_sound.play()
 
     def update(self):
-        if gfw.top() == game_over:
-            return
         # 좌우 이동
         self.x += self.move_dir * Boss.MOVE_SPEED * gfw.frame_time
         if self.x < Boss.WIDTH // 2:
@@ -148,9 +146,7 @@ class Boss(gfw.Sprite):
         r = int(Boss.WIDTH // 4 * Boss.SCALE)
         return self.x - r, self.y - r, self.x + r, self.y + r
     def remove(self):
-        if gfw.top() == game_over:
-            print("Cannot remove boss during game over state.")
-            return
+        print("Boss removed")
         gfw.top().world.remove(self)
 
 class BossBullet(gfw.Sprite):
@@ -159,7 +155,7 @@ class BossBullet(gfw.Sprite):
     def __init__(self, x, y, dx, dy):
         super().__init__('res/enemyfire.png', x, y)
         self.vx, self.vy = BossBullet.SPEED * dx, BossBullet.SPEED * dy
-        self.layer_index = gfw.top().world.layer.enemy_bullet
+        self.layer_index = gfw.top().world.layer.boss_bullet
         self.is_boss_bullet = True 
 
     def update(self):

@@ -38,8 +38,7 @@ def start(scene):
         if hasattr(_stack[-1], 'world') and _stack[-1].world is not None:
             _stack[-1].world.draw()
         else:
-            if hasattr(_stack[-1], 'draw'):
-                _stack[-1].draw()  # world 없는 경우 개별 draw 호출
+            _stack[-1].draw()  # world 없는 경우 개별 draw 호출
         update_canvas()
 
         # event 처리
