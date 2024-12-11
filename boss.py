@@ -10,7 +10,7 @@ class Boss(gfw.Sprite):
     MOVE_SPEED = 100  # 좌우 이동 속도
     
     MAX_BULLETS = 10
-    HP = 1000  # 보스 체력
+    HP = 5000  # 보스 체력
     SCALE = 1.75  # 보스 크기 확대 배율
     gauge = None
     BASE_BIG_BULLET_INTERVAL = 2.0  # 기본 커다란 투사체 발사 간격

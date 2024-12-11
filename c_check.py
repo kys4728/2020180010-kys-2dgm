@@ -169,7 +169,7 @@ class CollisionChecker:
         gfw.top().world.append(UpgradeItem(x, y, effect_type), gfw.top().world.layer.item)
 
     def check_boss_spawn(self):
-        if self.kill_count >= 1:
+        if self.kill_count >= 20:
             existing_bosses = gfw.top().world.objects_at(gfw.top().world.layer.boss)
             if existing_bosses:
                 return  
