@@ -14,6 +14,18 @@ center_y = canvas_height // 2
 
 world = World(2)  # 버튼과 배경을 위한 레이어 생성
 
+_sounds = {}
+global_volume = 60
+
+def sfx(file):  # 효과음 로드 함수
+    global _sounds
+    if file in _sounds:
+        return _sounds[file]
+    sound = load_wav(file)
+    sound.set_volume(global_volume)
+    _sounds[file] = sound
+    return sound
+
 class Button(Sprite):
     def __init__(self, bg_image, title, x, y, width, height, on_click):
         super().__init__(None, x, y)
@@ -47,6 +59,9 @@ class Button(Sprite):
         )
 
 def start_game():
+    sound = sfx('res/click.wav')  # 시작 버튼 클릭 시 효과음 로드
+    sound.set_volume(global_volume)
+    sound.play()  # 효과음 재생
     gfw.push(main_scene)  # 게임 씬으로 전환
 
 def quit_game():

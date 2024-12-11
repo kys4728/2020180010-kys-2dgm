@@ -9,9 +9,19 @@ class CollisionChecker:
     def __init__(self, fighter):
         self.fighter = fighter
         self.kill_count = 0  # 적 처치 횟수 추적
+        self.edead = self.load_sound('res/edead.wav')
+        self.edead.set_volume(80)
+        self.fdamage = self.load_sound('res/fdamage.wav')
+        self.fdamage.set_volume(100)
 
     def draw(self):
         pass
+
+    def load_sound(self, file):
+        """사운드 로드 함수"""
+        sound = load_wav(file)
+        sound.set_volume(64)  # 기본 볼륨 설정
+        return sound
 
     def update(self):
         # 충돌 처리에 필요한 객체 가져오기 (한 번만 호출)
@@ -50,10 +60,11 @@ class CollisionChecker:
                 self.drop_item(target.x, target.y)
                 if isinstance(target, Enemy):
                     self.kill_count += 1
+                    if self.edead:  # 적 제거 사운드 재생
+                        self.edead.play()
                     self.check_boss_spawn()
                 elif isinstance(target, Boss):
                     print("Boss defeated!")
-                    gfw.top().world.remove(target)
                     self.game_over()
             return True
         return False    
@@ -67,7 +78,7 @@ class CollisionChecker:
             self.fighter.reset_position()  # 초기 위치 복귀
             self.drop_items(5)  # 아이템 5개 뿌리기
         else:
-            self.game_over()  # 게임 오버 상태로 전환
+            self.game_over()  # 게임 오버 화면 전환
 
     def drop_items(self, count):
         """아이템을 화면에 뿌리기"""
@@ -81,13 +92,16 @@ class CollisionChecker:
         for e in self.enemies:
             for b in self.bullets:
                 if self.handle_projectile_collision(b, e):
-                    break  # 적이 제거되었으므로 다음 적으로 이동
-
+                    break  
+                    if self.edead:  
+                        self.edead.play()
             if gfw.collides_box(self.fighter, e):
                 gfw.top().world.remove(e)
                 self.kill_count += 1
                 self.check_boss_spawn()
                 self.fighter.hp -= 10
+                if self.fdamage:  # 체력 감소 사운드 재생
+                    self.fdamage.play()
                 print(f"Fighter HP: {self.fighter.hp}")
                 if self.fighter.hp <= 0:
                    self.handle_fighter_death()
@@ -98,7 +112,9 @@ class CollisionChecker:
             if not isinstance(b, Bullet) and gfw.collides_box(b, self.fighter):
                 print("Fighter hit by Enemy Bullet!")
                 gfw.top().world.remove(b)
-                self.fighter.hp -= 2  # 일반 적 투사체에 맞으면 체력 1 감소
+                self.fighter.hp -= 10  
+                if self.fdamage: 
+                    self.fdamage.play()
                 print(f"Fighter HP: {self.fighter.hp}")
             if self.fighter.hp <= 0:
                 self.handle_fighter_death()
@@ -113,6 +129,8 @@ class CollisionChecker:
 
             if gfw.collides_box(self.fighter, boss):
                 self.fighter.hp -= 20
+                if self.fdamage:  
+                    self.fdamage.play()
                 print(f"Fighter HP: {self.fighter.hp}")
                 if self.fighter.hp <= 0:
                    self.handle_fighter_death()
@@ -123,11 +141,13 @@ class CollisionChecker:
             if isinstance(b, BossBullet) and gfw.collides_box(b, self.fighter):
                 print("Fighter hit by Boss Bullet!")
                 gfw.top().world.remove(b)
-                self.fighter.hp -= 5  # 보스 투사체에 맞으면 더 큰 데미지
+                self.fighter.hp -= 15  # 보스 투사체에 맞으면 더 큰 데미지
             if isinstance(b, BigBossBullet) and gfw.collides_box(b, self.fighter):
                 print("Fighter hit by Big Boss Bullet!")
                 gfw.top().world.remove(b)
-                self.fighter.hp -= 20    
+                self.fighter.hp -= 25   
+                if self.fdamage:  # 체력 감소 사운드 재생
+                    self.fdamage.play() 
                 print(f"Fighter HP: {self.fighter.hp}")
             if self.fighter.hp <= 0:
                 self.handle_fighter_death()
@@ -137,22 +157,20 @@ class CollisionChecker:
     def check_item_collision(self):
         for item in self.items:
             if isinstance(item, UpgradeItem) and gfw.collides_box(item, self.fighter):
-                item.apply_effect(self.fighter)  # 아이템 효과를 적용
+                item.apply_effect(self.fighter) 
                 gfw.top().world.remove(item)
 
     def drop_item(self, x, y):
         # 고정 효과 아이템 생성
-        effect_type = 'damage'  # 항상 'damage' 효과로 설정 (레벨업 관련)
+        effect_type = 'damage' 
         print(f"Item dropped with effect: {effect_type}")
         gfw.top().world.append(UpgradeItem(x, y, effect_type), gfw.top().world.layer.item)
 
     def check_boss_spawn(self):
-        if self.kill_count >= 1:
+        if self.kill_count >= 15:
             existing_bosses = gfw.top().world.objects_at(gfw.top().world.layer.boss)
             if existing_bosses:
-                return  # 이미 보스가 존재하면 스폰하지 않음
-
-            print("Boss Spawned!")
+                return  
             boss = Boss(self.fighter)
             gfw.top().world.append(boss, gfw.top().world.layer.boss)
 
@@ -162,7 +180,10 @@ class CollisionChecker:
                 enemy_gen.deactivate()
 
             self.kill_count = 0
-
+    
+    def handle_boss_defeat(self):
+        self.is_game_over = True
+        self.game_over()  # 게임 오버 화면 전환
 
     def game_over(self):
         gfw.change(game_over)

@@ -2,6 +2,7 @@ from pico2d import *
 import gfw
 import random
 from item import UpgradeItem
+import game_over
 
 class Boss(gfw.Sprite):
     WIDTH = 113
@@ -9,13 +10,15 @@ class Boss(gfw.Sprite):
     MOVE_SPEED = 100  # 좌우 이동 속도
     
     MAX_BULLETS = 10
-    HP = 1000  # 보스 체력
+    HP = 5000  # 보스 체력
     SCALE = 1.75  # 보스 크기 확대 배율
     gauge = None
     BASE_BIG_BULLET_INTERVAL = 2.0  # 기본 커다란 투사체 발사 간격
     FAST_BIG_BULLET_INTERVAL = 1.0  # 체력이 낮을 때 커다란 투사체 발사 간격
     BASE_SHOOT_INTERVAL = 1.5  # 기본 총알 발사 간격
     FAST_SHOOT_INTERVAL = 0.8  # 체력이 낮을 때 빠른 발사 간격
+    big_fire_sound = None
+    boss_sound = None
     IMAGE_RECTS = [
         (0, 0, 114, 114),
         (0, 114, 114, 228),
@@ -28,7 +31,7 @@ class Boss(gfw.Sprite):
 
     def __init__(self, target):
         x = get_canvas_width() // 2
-        y = get_canvas_height() - Boss.HEIGHT // 2
+        y = get_canvas_height() - Boss.HEIGHT // 2 + 300
         super().__init__('res/bosses.png', x, y)
         self.layer_index = gfw.top().world.layer.boss
         self.speed = -50  # 아래로 내려오는 속도 (느리게)
@@ -46,8 +49,14 @@ class Boss(gfw.Sprite):
         self.frame_index = 0  # 현재 프레임 인덱스
         self.frame_time = 0  # 프레임 변경 시간 관리
         self.shoot_interval = Boss.BASE_SHOOT_INTERVAL
+        if Boss.boss_sound is None:
+            Boss.boss_sound = load_wav('res/boss.wav')
+            Boss.boss_sound.set_volume(50)
+        Boss.boss_sound.play()
 
     def update(self):
+        if gfw.top() == game_over:
+            return
         # 좌우 이동
         self.x += self.move_dir * Boss.MOVE_SPEED * gfw.frame_time
         if self.x < Boss.WIDTH // 2:
@@ -67,6 +76,9 @@ class Boss(gfw.Sprite):
         if self.hp <= Boss.HP * 0.3:  # 체력이 30% 이하일 때
             self.shoot_interval = Boss.FAST_SHOOT_INTERVAL
             self.big_bullet_interval =  Boss.FAST_BIG_BULLET_INTERVAL
+        elif self.hp <= Boss.HP * 0.6:  # 체력이 60% 이하일 때
+            self.shoot_interval = 1.1  # 중간 공격 간격
+            self.big_bullet_interval = 1.5
         else:
             self.shoot_interval = Boss.BASE_SHOOT_INTERVAL
             self.big_bullet_interval = Boss.BASE_BIG_BULLET_INTERVAL
@@ -81,8 +93,6 @@ class Boss(gfw.Sprite):
         if self.big_bullet_time >= self.big_bullet_interval:
             self.big_bullet_time = 0
             self.shoot_big_bullet()
-
-        # 체력이 0 이하라면 제거
         if self.hp <= 0:
             self.remove()
     def draw(self):
@@ -104,14 +114,14 @@ class Boss(gfw.Sprite):
         
         self.gauge.draw(bar_x, bar_y, bar_width, rate)
 
-    def decrease_health(self, damage):
-        self.health -= damage
-        print(f"Enemy Health: {self.health}/{self.max_health}")
-        if self.health <= 0:
-            self.remove()          
+    def load_sound(self, file):
+        """효과음 로드 함수"""
+        sound = load_wav(file)
+        sound.set_volume(64)  # 기본 볼륨 설정
+        return sound
 
     def shoot_bullets(self):
-        for angle in range(0, 360, 45):  # 원형으로 총알 발사
+        for angle in range(0, 360, 15):  # 원형으로 총알 발사
             rad = math.radians(angle)
             dx = math.cos(rad)
             dy = math.sin(rad)
@@ -120,6 +130,10 @@ class Boss(gfw.Sprite):
 
     def shoot_big_bullet(self):
         print("Boss is firing a big bullet!")
+        if Boss.big_fire_sound is None:
+            Boss.big_fire_sound = load_wav('res/bossfire.wav')
+            Boss.big_fire_sound.set_volume(5)
+        Boss.big_fire_sound.play()
         bullet = BigBossBullet(self.x, self.y, self.target.x, self.target.y)
         gfw.top().world.append(bullet)
 
@@ -129,26 +143,18 @@ class Boss(gfw.Sprite):
         self.health -= damage
         print(f"Boss HP: {self.hp}")
         if self.hp <= 0:
-            print("Boss Defeated!")
-            self.remove()
+            self.remove()   
     def get_bb(self):
         r = int(Boss.WIDTH // 4 * Boss.SCALE)
         return self.x - r, self.y - r, self.x + r, self.y + r
-
-    def take_damage(self, damage):
-        self.hp -= damage
-
     def remove(self):
-        print("Boss removed")
+        if gfw.top() == game_over:
+            print("Cannot remove boss during game over state.")
+            return
         gfw.top().world.remove(self)
-        
-        # 적 생성 재개
-        enemy_gen = gfw.top().world.objects_at(gfw.top().world.layer.controller)[0]
-        if isinstance(enemy_gen, EnemyGen):
-            enemy_gen.reactivate()
 
 class BossBullet(gfw.Sprite):
-    SPEED = 100  # 총알 속도
+    SPEED = 500  # 총알 속도
 
     def __init__(self, x, y, dx, dy):
         super().__init__('res/enemyfire.png', x, y)
@@ -159,7 +165,7 @@ class BossBullet(gfw.Sprite):
     def update(self):
         self.x += self.vx  * gfw.frame_time
         self.y += self.vy  * gfw.frame_time
-        if self.x < 0 or self.x > get_canvas_width() or self.y < 0 or self.y > get_canvas_height():
+        if self.x < 0 or self.x > get_canvas_width() or self.y < 100 or self.y > get_canvas_height():
             gfw.top().world.remove(self)
 
     def get_bb(self):
@@ -167,7 +173,7 @@ class BossBullet(gfw.Sprite):
         return self.x - r, self.y - r, self.x + r, self.y + r
 
 class BigBossBullet(gfw.Sprite):
-    SPEED = 300  # 커다란 투사체 속도
+    SPEED = 1000  # 커다란 투사체 속도
     ROTATE_SPEED = 180
 
     def __init__(self, x, y, target_x, target_y):
@@ -185,14 +191,13 @@ class BigBossBullet(gfw.Sprite):
         self.y += self.vy * gfw.frame_time
         self.angle = (self.angle + BigBossBullet.ROTATE_SPEED * gfw.frame_time) % 360
         # 화면 밖으로 나가면 제거
-        if self.x < 0 or self.x > get_canvas_width() or self.y < 0 or self.y > get_canvas_height():
+        if self.x < 0 or self.x > get_canvas_width() or self.y < 100 or self.y > get_canvas_height():
             gfw.top().world.remove(self)
 
     def get_bb(self):
-        r = 20  # 커다란 투사체 충돌 영역 반경
+        r = 30  # 커다란 투사체 충돌 영역 반경
         return self.x - r, self.y - r, self.x + r, self.y + r
 
     def draw(self):
         # 회전된 이미지 그리기
         self.image.composite_draw(math.radians(self.angle), '', self.x, self.y)
-        draw_rectangle(*self.get_bb())  # 디버깅용 충돌 박스

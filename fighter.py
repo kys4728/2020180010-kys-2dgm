@@ -1,7 +1,7 @@
 from pico2d import *
 import gfw
 import random
-
+import game_over
 
 class Fighter(gfw.Sprite):
     KEY_MAP = {
@@ -27,7 +27,7 @@ class Fighter(gfw.Sprite):
         self.layer_index = gfw.top().world.layer.fighter
         self.dx = 0
         self.dy = 0
-        self.speed = 320  # 초당 320 픽셀
+        self.speed = 300  # 초당 320 픽셀
         self.width = 72
         half_width = self.width // 2
         self.min_x = half_width
@@ -58,7 +58,17 @@ class Fighter(gfw.Sprite):
         self.item_count = 0  # 아이템 획득 카운트
         self.bullet_power = 10  # 기본 탄환 공격력
         self.damage = self.calculate_damage()   
- 
+        self.bullet_sound = self.load_sound('res/laser.wav')
+        self.bullet_sound.set_volume(2)
+        self.missile_sound = self.load_sound('res/missile.wav')
+        self.missile_sound.set_volume(10)
+        self.item_sound = self.load_sound('res/upgrade.wav')  # 레벨업 사운드 추가
+        self.item_sound.set_volume(25)
+        self.level_up_sound = self.load_sound('res/levelup.wav')  # 레벨업 사운드 추가
+        self.level_up_sound.set_volume(40)  # 볼륨 설정
+        self.dead_sound = self.load_sound('res/fdead.wav')  # 레벨업 사운드 추가
+        self.dead_sound.set_volume(40)  # 볼륨 설정
+
     def calculate_damage(self):
         """현재 레벨에 따라 데미지를 계산합니다."""
         self.missile_max_shots = Fighter.MISSILE_MAX_SHOTS + (self.level - 1)  # 레벨 2부터 미사일 추가
@@ -66,7 +76,7 @@ class Fighter(gfw.Sprite):
 
     def level_up(self):
         """전투기의 레벨을 증가시킵니다. 최대 레벨은 3입니다."""
-        if self.level >= 3:
+        if self.level >= 4:
             return
         self.level += 1
         self.damage = self.calculate_damage()
@@ -74,6 +84,8 @@ class Fighter(gfw.Sprite):
         self.missile_power += 50  # 미사일 공격력 증가
         self.missile_max_shots = Fighter.MISSILE_MAX_SHOTS + (self.level - 1)
         self.missile_count = self.missile_max_shots
+        if self.level_up_sound:
+            self.level_up_sound.play()
 
     def collect_item(self):
         """아이템을 수집했을 때 호출됩니다."""
@@ -82,6 +94,8 @@ class Fighter(gfw.Sprite):
         if self.item_count >= 5:  # 아이템 5개 단위로 레벨 업
             self.item_count = 0  # 카운트 초기화
             self.level_up()
+        if self.item_sound:
+            self.item_sound.play()
 
     def take_damage(self, damage):
         """플레이어가 피해를 받을 때 호출됩니다."""
@@ -89,26 +103,19 @@ class Fighter(gfw.Sprite):
         print(f"Fighter HP: {self.hp}")
         if self.hp <= 0:
             self.lives -= 1
-            print(f"Fighter lost a life! Remaining lives: {self.lives}")
             if self.lives > 0:
                 self.reset_position()  # 초기 위치로 복귀
-                self.drop_items()  # 아이템 5개 뿌리기
                 self.hp = self.max_hp  # 체력 복구
             else:
-                self.game_over()       
+
+                gfw.change(game_over)      
 
     def reset_position(self):
         """플레이어를 초기 위치로 이동"""
         self.x = self.start_x
         self.y = self.start_y
-
-    def drop_items(self):
-        """플레이어가 아이템 5개를 뿌림"""
-        for _ in range(5):
-            x = random.randint(50, get_canvas_width() - 50)  # 화면 내 랜덤 위치
-            y = random.randint(200, get_canvas_height() - 200)  # 화면 내 랜덤 위치
-            item = UpgradeItem(x, y)  # 아이템 생성
-            gfw.top().world.append(item, gfw.top().world.layer.item)
+        if hasattr(self, 'dead_sound') and self.dead_sound:
+            self.dead_sound.play()
 
     def handle_event(self, e):
         pair = (e.type, e.key)
@@ -155,46 +162,48 @@ class Fighter(gfw.Sprite):
         if self.laser_time < Fighter.SPARK_INTERVAL:
             self.spark_image.draw(self.x, self.y + Fighter.SPARK_OFFSET)
 
+    def load_sound(self, file):
+        """효과음 로드 함수"""
+        sound = load_wav(file)
+        sound.set_volume(64)  # 기본 볼륨 설정
+        return sound
+
+
     def fire(self):
         """플레이어가 발사하는 탄환을 생성"""
         world = gfw.top().world
 
     # 기본 탄환 발사
         world.append(Bullet(self.x, self.y, self.bullet_power), world.layer.bullet)
+        self.bullet_sound.play()
 
     # 레벨 2 이상이면 대각선 탄환 추가
         if self.level >= 2:
             diagonal_power = self.bullet_power // 2
             world.append(SecondBullet(self.x - 10, self.y, dx=-100, attack_power=self.bullet_power))  # 왼쪽 대각선
             world.append(SecondBullet(self.x + 10, self.y, dx=100, attack_power=self.bullet_power))   # 오른쪽 대각선
-
-        if self.level == 3:
+        if self.level >= 3:
             if self.special_laser_time >= Fighter.SPECIAL_LASER_INTERVAL:
                 special_bullet_power = int(self.bullet_power * 1.5)  # 특수 탄환 공격력
                 world.append(ThirdBullet(self.x, self.y, special_bullet_power), world.layer.bullet)
                 self.special_laser_time = 0  # 특수 탄 발사 시간 초기화
+                
         # 레벨 3에서는 정면 탄환에 새로운 이미지 사용
         else:
         # 정면 탄환 (레벨 1 및 2)
             world.append(Bullet(self.x, self.y, self.bullet_power), world.layer.bullet)
 
-
-            print(f"Fired bullets at level {self.level}")
-        if self.level >= 3:
-            print(f"ThirdBullet with attack power: {self.bullet_power}")
-        elif self.level >= 2:
-            print(f"SecondBullet with attack power: {diagonal_power}")
-
     def launch_missile(self):
         if self.missile_count > 0:  # 미사일이 남아 있을 때만 발사
             world = gfw.top().world
             world.append(Missile(self.x, self.y, self.missile_power), world.layer.bullet)
+            self.missile_sound.play()
             self.missile_count -= 1
             self.missile_cooldown_elapsed = 0
         print(f"Missile launched with attack power: {self.missile_power}")
-    
+
     def get_bb(self):
-        r = 10  # 커다란 투사체 충돌 영역 반경
+        r = 15  # 커다란 투사체 충돌 영역 반경
         return self.x - r, self.y - r, self.x + r, self.y + r
 
 class Bullet(gfw.Sprite):

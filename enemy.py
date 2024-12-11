@@ -6,11 +6,11 @@ from item import UpgradeItem
 class Enemy(gfw.Sprite):
     WIDTH = 140
     HEIGHT = 800
-    SHOOT_INTERVAL = 2.5  # 초기 총알 발사 간격
-    MIN_SHOOT_INTERVAL = 0.5  # 최소 총알 발사 간격
-    MAX_BULLETS = 3
-    ITEM_DROP_CHANCE = 0.3  # 30% 확률로 아이템 드랍
-    HP = 30  # 적 체력
+    SHOOT_INTERVAL = 0.6  # 초기 총알 발사 간격
+    MIN_SHOOT_INTERVAL = 0.1  # 최소 총알 발사 간격
+    MAX_BULLETS = 5
+    ITEM_DROP_CHANCE = 0.1  # 30% 확률로 아이템 드랍
+    HP = 50  # 적 체력
     SCALE = 0.75
     gauge = None
     IMAGE_RECTS = [
@@ -20,8 +20,6 @@ class Enemy(gfw.Sprite):
     (0, 480, 140, 640),
     (0, 640, 140, 800),
     ]
-
-
 
     def __init__(self, x, target):
         y = get_canvas_height() + int(self.WIDTH * self.SCALE // 2)
@@ -44,7 +42,7 @@ class Enemy(gfw.Sprite):
             if self.hp <= 0:
                 print("Enemy destroyed!")
                 gfw.top().world.remove(self)
-    
+
     def update(self):
 
 
@@ -95,7 +93,10 @@ class Enemy(gfw.Sprite):
             self.remove()
           
     def drop_item(self):
-        if random.random() < Enemy.ITEM_DROP_CHANCE:  # 30% 확률
+        chance = random.random()
+    
+        if chance < Enemy.ITEM_DROP_CHANCE:
+            print("Item dropped!")
             item = UpgradeItem(self.x, self.y)  # 아이템 생성
             gfw.top().world.append(item)
 
@@ -107,7 +108,7 @@ class Enemy(gfw.Sprite):
         gfw.top().world.remove(self)
 
 class EnemyGen:
-    GEN_INTERVAL = 5.0
+    GEN_INTERVAL = 4.0
     ENEMY_SPACING = 100  # 적끼리의 간격 (픽셀 단위)
     MIN_GEN_INTERVAL = 1.0  # 최소 생성 간격 (난이도 증가에 따라 줄어듦)
     DIFFICULTY_INCREASE_INTERVAL = 10.0
@@ -143,7 +144,7 @@ class EnemyGen:
     def spawn_random_enemies(self):
         """랜덤 위치와 개수로 적 생성"""
         screen_width = get_canvas_width()
-        num_enemies = random.randint(1, 5)  # 랜덤한 적 수 (1~5개 생성)
+        num_enemies = random.randint(3, 7)  # 랜덤한 적 수 (1~5개 생성)
         self.enemy_positions = []  # 적 위치 초기화
 
         for _ in range(num_enemies):
@@ -167,7 +168,7 @@ class EnemyGen:
         self.active = False
 
 class Bullet(gfw.Sprite):
-    SPEED = 400  # 총알 속도
+    SPEED = 800  # 총알 속도
 
     def __init__(self, x, y, target_x, target_y):
         super().__init__('res/enemyfire.png', x, y)

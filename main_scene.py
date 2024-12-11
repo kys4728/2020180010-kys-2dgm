@@ -8,9 +8,9 @@ from c_check import CollisionChecker
 from boss import *
 from ui import FighterUI
 import pause_scene
+import game_over
 
-
-world = gfw.World(['bg', 'fighter', 'bullet', 'missile', 'enemy', 'controller', 'player_bullet', 'enemy_bullet', 'item','boss','boss_bullet','ui'])
+world = gfw.World(['bg', 'fighter', 'bullet', 'missile', 'enemy', 'controller', 'player_bullet', 'enemy_bullet', 'item','boss','boss_bullet','ui','game_over'])
 
 canvas_width = 625
 canvas_height = 1100
@@ -18,7 +18,13 @@ shows_bounding_box = False
 shows_object_count = True
 
 def enter():
-    global fighter, fighter_ui
+    global fighter, fighter_ui, bg_music
+
+     # 배경음악 로드 및 재생
+    bg_music = load_music('res/mainbg.mp3')  # 배경음악 파일 경로 설정
+    bg_music.set_volume(20)  # 볼륨 설정 (0~128 범위)
+    bg_music.repeat_play()  # 반복 재생
+
     # 배경 추가
     world.append(gfw.VertFillBackground('res/background.png', -40), world.layer.bg)
     
@@ -38,6 +44,8 @@ def enter():
     world.append(collision_checker, world.layer.controller)
     
 def exit():
+    global bg_music
+    bg_music.stop()  # 게임 종료 시 배경음악 중지
     world.clear()
     print('[main.exit()]')
 

@@ -3,7 +3,8 @@ from pico2d import *
 import title_scene
 import time
 import sys
-
+import os
+os.environ['PYSDL2_DLL_PATH'] = './'
 self = sys.modules[__name__]
 
 canvas_width = title_scene.canvas_width
@@ -58,11 +59,10 @@ def handle_event(e):
     pass
 IMAGE_FILES = [
     "res/background.png",
-    "res/boss.png",
+    "res/bosses.png",
     "res/bossbigfire.png",
     "res/bossfg2.png",
     "res/bossbg2.png",
-    "res/enemy.png",
     "res/enemys.png",
     "res/enemyfire.png",
     "res/fighiter.png",
@@ -75,12 +75,13 @@ IMAGE_FILES = [
     "res/item.png",
     "res/ldback.png",
     "res/missile.png",
-    "res/number.png",
     "res/pgbg.png",
     "res/pgfg.png",
-    "res/wreck.png",
     "res/smrec.png",
     "res/titlename.png",
+    "res/gameover.png",
+    "res/uibg.png",
+    "res/playerfg2.png"
 ]
 if __name__ == '__main__':
     gfw.start_main_module()

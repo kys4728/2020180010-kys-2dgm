@@ -13,10 +13,9 @@ def enter():
     center_y = get_canvas_height() // 2
 
     global font
-    font = gfw.font.load('res/artie-sans.ttf')
+    font = gfw.font.load('res/artie-sans.ttf',30)
 
     world.append(Background('res/background.png'), 0)
-    world.append(Sprite('res/number.png', center_x, center_y), 0)
 
     world.append(self, 1)
 
@@ -24,14 +23,14 @@ def exit():
     world.clear()
 
 def handle_event(e):
-    if e.type == SDL_KEYDOWN and e.key == SDLK_BACKSPACE:
+    if e.type == SDL_KEYDOWN and e.key == SDLK_q:
         gfw.pop()
         gfw.pop()
         return True
 
 def draw():
-    gfw.font.draw_centered_text(font, 'Press ESC to Resume',     center_x, center_y + 30, (63, 0, 0))
-    gfw.font.draw_centered_text(font, 'Press Backspace to Exit', center_x, center_y - 20, (0, 0, 63))
+    gfw.font.draw_centered_text(font, 'Press ESC to Resume',     center_x, center_y + 60, (0, 126, 63))
+    gfw.font.draw_centered_text(font, 'Press Q to Exit', center_x, center_y - 20, (126, 0, 0))
 
 def update():
     pass

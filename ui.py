@@ -6,6 +6,7 @@ class FighterUI:
     def __init__(self, fighter):
         """Fighter의 상태를 화면에 표시할 UI 생성"""
         self.fighter = fighter
+
         try:
             self.ui_background_image = gfw.image.load('res/uibg.png')
         except Exception as e:
@@ -15,6 +16,7 @@ class FighterUI:
         try:
             self.font = load_font('res/artie-sans.ttf', 25)
             self.small_font = load_font('res/artie-sans.ttf', 15)
+
         except Exception as e:
             print("Error loading fonts:", e)
             self.font = None
@@ -62,7 +64,15 @@ class FighterUI:
         x = canvas_width - 180
         y = 65
         if self.small_font:
-            self.small_font.draw(x, y, f'Missiles: {self.fighter.missile_count}/{self.fighter.missile_max_shots}', (255, 255, 255))
+            self.small_font.draw(x, y, f'Missiles: {self.fighter.missile_count}/{self.fighter.missile_max_shots}', (128, 128, 255))
+
+    def draw_key(self):
+        """남은 미사일 개수를 화면 우측 하단에 표시"""
+        canvas_width = get_canvas_width()
+        x = 20
+        y = 65
+        if self.small_font:
+            self.small_font.draw(x, y, f' key: arrow key, z/x, esc', (0, 0, 0))
 
     def draw(self):
         """UI를 그리는 메인 메서드"""
@@ -71,4 +81,5 @@ class FighterUI:
         self.draw_lives()
         self.draw_level()
         self.draw_missile_count()
+        self.draw_key()
 

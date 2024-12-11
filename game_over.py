@@ -1,15 +1,18 @@
 from pico2d import *
 import gfw
 import title_scene
-
+import main_scene
+import boss
+import c_check
 def enter():
     global game_over_image, font, font_large
+    
     game_over_image = gfw.image.load('res/gameover.png')
     font = gfw.font.load('res/artie-sans.ttf', 25)
     font_large = gfw.font.load('res/artie-sans.ttf', 30)
 
     # world 객체 초기화
-    gfw.world = gfw.World([])
+    gfw.world = gfw.World()
 
 def start_game():
     gfw.change(title_scene)  # 타이틀 화면으로 이동

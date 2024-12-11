@@ -36,8 +36,8 @@ class World:
     def draw(self):
         for go in self.all_objects():
             go.draw()
-            if hasattr(go, 'get_bb'):
-                draw_rectangle(*go.get_bb())
+            #if hasattr(go, 'get_bb'):
+                #draw_rectangle(*go.get_bb())
     def all_objects(self):
         for objs in self.objects:
             for go in objs:
